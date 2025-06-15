@@ -213,7 +213,7 @@ export class AIService {
 			}
 
 			const parsedContent = JSON.parse(content) as LayoutAsset;
-
+			console.log("parsedContent", parsedContent);
 			return {
 				success: true,
 				data: parsedContent,
@@ -323,13 +323,14 @@ Example response:
 
 		try {
 			const completion = await this.openai.chat.completions.create({
-				model: "gpt-4o",
+				model: "gpt-4.1",
 				messages: [
 					{ role: "system", content: systemPrompt },
 					{ role: "user", content: prompt },
 				],
 				temperature: 0.7,
 				max_tokens: 2000,
+				stream: false,
 			});
 
 			const response = completion.choices[0]?.message?.content;

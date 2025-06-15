@@ -20,10 +20,11 @@ export class ComponentRenderer {
 		this.renderContainer = document.createElement("div");
 		this.renderContainer.id = "component-render-container";
 		this.renderContainer.style.cssText = `
-      position: fixed;
-      top: -9999px;
-      left: -9999px;
-      visibility: hidden;
+      position: fixed; /* Keep it out of normal flow */
+      top: 0; /* Place at top-left corner */
+      left: 0;
+      /* Positioned off-screen to avoid visual impact but still renderable */
+      transform: translate(-9999px, -9999px);
       pointer-events: none;
       z-index: -1;
       background: white;
@@ -89,7 +90,7 @@ export class ComponentRenderer {
 
 			// Convert to image URL
 			const imageUrl = canvas.toDataURL("image/png", 1.0);
-
+			console.log("imageUrl", imageUrl);
 			// Cleanup
 			this.renderContainer.removeChild(wrapper);
 
