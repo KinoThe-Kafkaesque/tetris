@@ -71,10 +71,14 @@ export const useDesignGeneration = (): DesignGenerationState &
 				id: uuidv4(),
 				type,
 				content,
-				prompt,
 				designId,
 				createdAt: new Date(),
-				metadata: {},
+    metadata: {
+      prompt: prompt,
+      model: "",
+      temperature: 0,
+      createdAt: new Date(),
+    },
 			};
 
 			setState((prev) => ({
@@ -195,7 +199,7 @@ export const useDesignGeneration = (): DesignGenerationState &
 				}
 
 				const aiService = new AIService(state.apiKey);
-				const prompt = newPrompt || asset.prompt;
+				const prompt = newPrompt || asset.metadata.prompt;
 
 				await generateAsset(
 					aiService,

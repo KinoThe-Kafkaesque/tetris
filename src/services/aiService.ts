@@ -116,9 +116,23 @@ export class AIService {
 		}
 
 		try {
-			const prompt = `Create a color palette for: ${brief}
+			let prompt = `Create a color palette for: ${brief}
 			
-			Generate 5-7 cohesive colors with proper usage notes.
+			Generate 5-7 cohesive colors with proper usage notes.`;
+
+			// Incorporate style profile if provided
+			if (styleProfile) {
+				prompt += `
+			
+			Brand Context:
+			- Existing Colors: ${styleProfile.colors.join(", ")}
+			- Brand Tone: ${styleProfile.tone}
+			- Brand Guidelines: ${styleProfile.brandGuidelines}
+			
+			Please ensure the new palette complements the existing brand colors and aligns with the ${styleProfile.tone} tone.`;
+			}
+
+			prompt += `
 			
 			Return ONLY valid JSON in this exact format:
 			{
@@ -144,7 +158,30 @@ export class AIService {
 				throw new Error("No content generated");
 			}
 
-			const parsedContent = JSON.parse(content) as ColorPalette;
+			let parsedContent = JSON.parse(content) as ColorPalette;
+
+			// If style profile provided, ensure compatibility with existing colors
+			if (styleProfile && styleProfile.colors.length > 0) {
+				// Add existing brand colors if they're not already included
+				const existingColors = styleProfile.colors.map((color, index) => ({
+					hex: color,
+					name: `Brand Color ${index + 1}`,
+					usage: "Brand primary"
+				}));
+
+				// Merge with generated colors, avoiding duplicates
+				const allColors = [...existingColors];
+				for (const color of parsedContent.colors) {
+					if (!styleProfile.colors.includes(color.hex)) {
+						allColors.push(color);
+					}
+				}
+
+				parsedContent = {
+					...parsedContent,
+					colors: allColors.slice(0, 7) // Keep max 7 colors
+				};
+			}
 
 			return {
 				success: true,
@@ -182,9 +219,24 @@ export class AIService {
 		}
 
 		try {
-			const prompt = `Create a responsive layout for: ${brief}
+			let prompt = `Create a responsive layout for: ${brief}
 			
-			Generate CSS Grid structure with breakpoints.
+			Generate CSS Grid structure with breakpoints.`;
+
+			// Incorporate style profile if provided
+			if (styleProfile) {
+				prompt += `
+			
+			Brand Context:
+			- Brand Colors: ${styleProfile.colors.join(", ")}
+			- Design Tone: ${styleProfile.tone}
+			- Brand Guidelines: ${styleProfile.brandGuidelines}
+			
+			Please design a layout that reflects the ${styleProfile.tone} aesthetic and considers the brand's visual identity.
+			Use spacing and proportions that align with a ${styleProfile.tone} design approach.`;
+			}
+
+			prompt += `
 			
 			Return ONLY valid JSON in this exact format:
 			{
@@ -212,7 +264,42 @@ export class AIService {
 				throw new Error("No content generated");
 			}
 
-			const parsedContent = JSON.parse(content) as LayoutAsset;
+			let parsedContent = JSON.parse(content) as LayoutAsset;
+
+			// Apply style profile adjustments to CSS properties
+			if (styleProfile) {
+				const adjustedProperties = { ...parsedContent.cssProperties };
+				
+				// Adjust spacing based on tone
+				switch (styleProfile.tone) {
+					case "minimal":
+						adjustedProperties.gap = "2rem";
+						adjustedProperties.padding = "2rem";
+						break;
+					case "luxurious":
+						adjustedProperties.gap = "3rem";
+						adjustedProperties.padding = "3rem";
+						break;
+					case "playful":
+						adjustedProperties.gap = "1.5rem";
+						adjustedProperties.padding = "1.5rem";
+						adjustedProperties.borderRadius = "12px";
+						break;
+					case "professional":
+						adjustedProperties.gap = "1rem";
+						adjustedProperties.padding = "1.5rem";
+						break;
+					default:
+						// Keep defaults
+						break;
+				}
+
+				parsedContent = {
+					...parsedContent,
+					cssProperties: adjustedProperties
+				};
+			}
+
 			console.log("parsedContent", parsedContent);
 			return {
 				success: true,
@@ -296,6 +383,10 @@ export class AIService {
 	}
 
 	private async generateComponent(prompt: string): Promise<ComponentAsset> {
+		if (!this.openai) {
+			throw new Error("OpenAI API key not configured");
+		}
+
 		const systemPrompt = `You are an expert web developer and designer. Generate a complete, self-contained web component based on the user's request.
 
 Rules:
@@ -379,24 +470,36 @@ Example response:
 			switch (type) {
 				case "copy":
 					const copyResult = await this.generateCopy(prompt);
+					if (!copyResult.success || !copyResult.data) {
+						throw new Error(copyResult.error || "Failed to generate copy");
+					}
 					content = copyResult.data;
 					model = "gpt-4o";
 					temperature = 0.7;
 					break;
 				case "image":
 					const imageResult = await this.generateImage(prompt);
+					if (!imageResult.success || !imageResult.data) {
+						throw new Error(imageResult.error || "Failed to generate image");
+					}
 					content = imageResult.data;
 					model = "dall-e-3";
 					temperature = 0;
 					break;
 				case "palette":
 					const paletteResult = await this.generatePalette(prompt);
+					if (!paletteResult.success || !paletteResult.data) {
+						throw new Error(paletteResult.error || "Failed to generate palette");
+					}
 					content = paletteResult.data;
 					model = "gpt-4o";
 					temperature = 0.3;
 					break;
 				case "layout":
 					const layoutResult = await this.generateLayout(prompt);
+					if (!layoutResult.success || !layoutResult.data) {
+						throw new Error(layoutResult.error || "Failed to generate layout");
+					}
 					content = layoutResult.data;
 					model = "gpt-4o";
 					temperature = 0.5;

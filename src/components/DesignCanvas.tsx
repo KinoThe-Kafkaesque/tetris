@@ -5,18 +5,15 @@ import {
 	Rect,
 	Text,
 	Image as KonvaImage,
-	Group,
 } from "react-konva";
 import {
 	Upload,
 	Download,
-	RotateCw,
 	Move,
 	Type,
 	Palette,
 	Image as ImageIcon,
 	Trash2,
-	Plus,
 	Camera,
 	Key,
 	Sparkles,
